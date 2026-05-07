@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>EcoCraft - O Jogo da Reciclagem</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-green: #4CAF50;
+            --primary-brown: #8B5E3C;
+            --primary-blue: #2196F3;
+            --dark-bg: #0a0a0a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --success-gold: #FFD700;
+            --error-red: #FF6B6B;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .game-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(139, 94, 60, 0.1));
+            border-bottom: 1px solid var(--card-border);
+            flex-shrink: 0;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-logo img {
+            height: 32px;
+            width: auto;
+        }
+
+        .header-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .discovery-counter {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .counter-value {
+            color: var(--primary-green);
+            font-weight: 700;
+        }
+
+        /* Game Canvas */
+        .game-canvas {
+            flex: 1;
+            position: relative;
+            background-color: var(--dark-bg);
+            overflow: hidden;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .item-sprite {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            cursor: grab;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            touch-action: none;
+        }
+
+        .item-sprite:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .item-sprite.dragging {
+            cursor: grabbing;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.6), 0 0 40px rgba(76, 175, 80, 0.3);
+            z-index: 1000;
+        }
+
+        .item-sprite img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .item-label {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 2000;
+            animation: slideUp 0.3s ease-out;
+            pointer-events: none;
+        }
+
+        .toast.success {
+            color: var(--primary-green);
+            border-color: rgba(76, 175, 80, 0.3);
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .toast.error {
+            color: var(--error-red);
+            border-color: rgba(255, 107, 107, 0.3);
+            background: rgba(255, 107, 107, 0.1);
+        }
+
+        .toast.info {
+            color: var(--primary-blue);
+            border-color: rgba(33, 150, 243, 0.3);
+            background: rgba(33, 150, 243, 0.1);
+        }
+
+        /* Floating Text */
+        .floating-text {
+            position: fixed;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--success-gold);
+            pointer-events: none;
+            animation: floatUp 2s ease-out forwards;
+            z-index: 1500;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Discovered Items Panel */
+        .discovered-panel {
+            flex-shrink: 0;
+            background: linear-gradient(180deg, rgba(139, 94, 60, 0.1), rgba(76, 175, 80, 0.05));
+            border-top: 1px solid var(--card-border);
+            padding: 12px 16px;
+            max-height: 100px;
+            overflow-y: hidden;
+        }
+
+        .discovered-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .discovered-items {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 4px;
+        }
+
+        .discovered-items::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .discovered-items::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .discovered-items::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        .discovered-item {
+            flex-shrink: 0;
+            width: 56px;
+            height: 56px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            animation: slideUpItem 0.4s ease-out;
+        }
+
+        .discovered-item:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(76, 175, 80, 0.5);
+        }
+
+        .discovered-item img {
+            width: 44px;
+            height: 44px;
+            object-fit: contain;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            background: linear-gradient(180deg, rgba(33, 150, 243, 0.05), rgba(76, 175, 80, 0.05));
+            border-top: 1px solid var(--card-border);
+            flex-shrink: 0;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.reset {
+            border-color: rgba(33, 150, 243, 0.3);
+            color: var(--primary-blue);
+        }
+
+        .btn.hint {
+            border-color: rgba(76, 175, 80, 0.3);
+            color: var(--primary-green);
+        }
+
+        /* Animations */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translate(-50%, 20px);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @keyframes slideUpItem {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-60px);
+            }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        @keyframes successFlash {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7);
+                transform: scale(0.8);
+            }
+            50% {
+                box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
+                transform: scale(1);
+            }
+        }
+
+        .item-sprite.shake {
+            animation: shake 0.3s ease-in-out;
+        }
+
+        .item-sprite.success-flash {
+            animation: successFlash 0.5s ease-out;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .header-title {
+                font-size: 12px;
+            }
+
+            .item-sprite {
+                width: 50px;
+                height: 50px;
+            }
+
+            .item-sprite img {
+                width: 40px;
+                height: 40px;
+            }
+
+            .discovered-item {
+                width: 48px;
+                height: 48px;
+            }
+
+            .discovered-item img {
+                width: 36px;
+                height: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="game-header">
+        <div class="header-logo">
+            <img src="logo-jogo.png" alt="EcoCraft Logo">
+            <span class="header-title">EcoCraft</span>
+        </div>
+        <div class="discovery-counter">
+            <span>Descobertas:</span>
+            <span class="counter-value" id="counter">0/10</span>
+        </div>
+    </div>
+
+    <!-- Game Canvas -->
+    <div class="game-canvas" id="gameCanvas"></div>
+
+    <!-- Discovered Items Panel -->
+    <div class="discovered-panel">
+        <div class="discovered-title">Itens Descobertos</div>
+        <div class="discovered-items" id="discoveredItems"></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <button class="btn reset" id="resetBtn">🔄 Reiniciar</button>
+        <button class="btn hint" id="hintBtn">💡 Dica</button>
+    </div>
+
+    <script>
+        // ============ GAME DATA ============
+
+        const RECIPES = {
+            'papel-papel': 'papel-reciclado',
+            'papelao-papelao': 'papel-reciclado',
+            'papel-papelao': 'papel-reciclado',
+            'papelao-papel': 'papel-reciclado',
+            'metal-metal': 'aluminio-fundido',
+            'garrafa-plastico-garrafa-plastico': 'plastico-triturado',
+            'sacola-plastica-garrafa-plastico': 'plastico-triturado',
+            'garrafa-plastico-sacola-plastica': 'plastico-triturado',
+            'vidro-vidro': 'vidro-moido',
+            'plastico-triturado-plastico-triturado': 'cadeira-plastico',
+            'vidro-moido-aluminio-fundido': 'vidro-reciclado',
+            'aluminio-fundido-vidro-moido': 'vidro-reciclado',
+            'papel-reciclado-plastico-triturado': 'brinquedo-ecologico',
+            'plastico-triturado-papel-reciclado': 'brinquedo-ecologico',
+            'papel-higienico-papel': 'papel-reciclado',
+            'papel-papel-higienico': 'papel-reciclado'
+        };
+
+        const ITEMS_DATA = {
+            'papel': { name: 'Papel', image: 'objetos/objetos primarios/papel.png', type: 'primary' },
+            'papelao': { name: 'Papelão', image: 'objetos/objetos primarios/papelao.png', type: 'primary' },
+            'plastico-triturado': { name: 'Plástico Triturado', image: 'objetos/objetos primarios/plastico-triturado.png', type: 'primary' },
+            'garrafa-plastico': { name: 'Garrafa Plástica', image: 'objetos/objetos primarios/garrafa-plastico.png', type: 'primary' },
+            'sacola-plastica': { name: 'Sacola Plástica', image: 'objetos/objetos primarios/sacola-plastica.png', type: 'primary' },
+            'vidro': { name: 'Vidro', image: 'objetos/objetos primarios/vidro.png', type: 'primary' },
+            'metal': { name: 'Metal', image: 'objetos/objetos primarios/metal.png', type: 'primary' },
+            'papel-higienico': { name: 'Papel Higiênico', image: 'objetos/objetos primarios/papel-higienico.png', type: 'primary' },
+            'papel-reciclado': { name: 'Papel Reciclado', image: 'objetos/objetos de combinações/papel-reciclado.png', type: 'intermediate' },
+            'aluminio-fundido': { name: 'Alumínio Fundido', image: 'objetos/objetos de combinações/aluminio-fundido.png', type: 'intermediate' },
+            'vidro-moido': { name: 'Vidro Moído', image: 'objetos/objetos de combinações/vidro-moido.png', type: 'intermediate' },
+            'vidro-reciclado': { name: 'Vidro Reciclado', image: 'objetos/objetos de combinações/vidro-reciclado.png', type: 'advanced' },
+            'cadeira-plastico': { name: 'Cadeira de Plástico', image: 'objetos/objetos de combinações/cadeira-plastico.png', type: 'advanced' },
+            'brinquedo-ecologico': { name: 'Brinquedo Ecológico', image: 'objetos/objetos de combinações/brinquedo-ecologico.png', type: 'advanced' }
+        };
+
+        // ============ GAME STATE ============
+
+        let gameState = {
+            activeItems: [],
+            discoveredItems: new Set(),
+            draggedItem: null,
+            offsetX: 0,
+            offsetY: 0
+        };
+
+        // ============ DOM ELEMENTS ============
+
+        const gameCanvas = document.getElementById('gameCanvas');
+        const discoveredItemsContainer = document.getElementById('discoveredItems');
+        const counterDisplay = document.getElementById('counter');
+        const resetBtn = document.getElementById('resetBtn');
+        const hintBtn = document.getElementById('hintBtn');
+
+        // ============ INITIALIZATION ============
+
+        function initGame() {
+            gameState.activeItems = [];
+            gameState.discoveredItems.clear();
+            discoveredItemsContainer.innerHTML = '';
+            gameCanvas.innerHTML = '';
+
+            // Add initial items
+            const initialItems = ['papel', 'papelao', 'garrafa-plastico', 'metal'];
+            initialItems.forEach((itemId, index) => {
+                createSprite(itemId, 40 + index * 80, 100);
+                gameState.discoveredItems.add(itemId);
+            });
+
+            updateDiscoveredPanel();
+            updateCounter();
+        }
+
+        function createSprite(itemId, x, y) {
+            const itemData = ITEMS_DATA[itemId];
+            if (!itemData) return;
+
+            const sprite = document.createElement('div');
+            sprite.className = 'item-sprite';
+            sprite.dataset.itemId = itemId;
+            sprite.style.left = x + 'px';
+            sprite.style.top = y + 'px';
+
+            const img = document.createElement('img');
+            img.src = itemData.image;
+            img.alt = itemData.name;
+
+            sprite.appendChild(img);
+            gameCanvas.appendChild(sprite);
+
+            gameState.activeItems.push({
+                element: sprite,
+                itemId: itemId,
+                x: x,
+                y: y
+            });
+
+            setupDrag(sprite);
+        }
+
+        // ============ DRAG & DROP ============
+
+        function setupDrag(element) {
+            let startX, startY, currentX, currentY;
+
+            function onMouseDown(e) {
+                if (e.button !== 0) return;
+                startDrag(e.clientX, e.clientY, e);
+            }
+
+            function onTouchStart(e) {
+                if (e.touches.length !== 1) return;
+                startDrag(e.touches[0].clientX, e.touches[0].clientY, e);
+            }
+
+            function startDrag(clientX, clientY, e) {
+                e.preventDefault();
+                gameState.draggedItem = element;
+                const rect = element.getBoundingClientRect();
+                gameState.offsetX = clientX - rect.left;
+                gameState.offsetY = clientY - rect.top;
+                startX = clientX;
+                startY = clientY;
+                currentX = clientX;
+                currentY = clientY;
+
+                element.classList.add('dragging');
+
+                function onMouseMove(e) {
+                    currentX = e.clientX;
+                    currentY = e.clientY;
+                    updateDragPosition(currentX, currentY);
+                }
+
+                function onTouchMove(e) {
+                    if (e.touches.length !== 1) return;
+                    currentX = e.touches[0].clientX;
+                    currentY = e.touches[0].clientY;
+                    updateDragPosition(currentX, currentY);
+                }
+
+                function updateDragPosition(clientX, clientY) {
+                    const canvasRect = gameCanvas.getBoundingClientRect();
+                    let newX = clientX - canvasRect.left - gameState.offsetX;
+                    let newY = clientY - canvasRect.top - gameState.offsetY;
+
+                    newX = Math.max(0, Math.min(newX, canvasRect.width - element.offsetWidth));
+                    newY = Math.max(0, Math.min(newY, canvasRect.height - element.offsetHeight));
+
+                    element.style.left = newX + 'px';
+                    element.style.top = newY + 'px';
+                }
+
+                function onMouseUp(e) {
+                    endDrag();
+                }
+
+                function onTouchEnd(e) {
+                    endDrag();
+                }
+
+                function endDrag() {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    document.removeEventListener('touchmove', onTouchMove);
+                    document.removeEventListener('touchend', onTouchEnd);
+
+                    element.classList.remove('dragging');
+
+                    const finalX = parseFloat(element.style.left);
+                    const finalY = parseFloat(element.style.top);
+
+                    // Find nearby items for combination
+                    checkNearbyItems(element, finalX, finalY);
+
+                    gameState.draggedItem = null;
+                }
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+                document.addEventListener('touchmove', onTouchMove, { passive: false });
+                document.addEventListener('touchend', onTouchEnd);
+            }
+
+            element.addEventListener('mousedown', onMouseDown);
+            element.addEventListener('touchstart', onTouchStart, { passive: false });
+        }
+
+        function checkNearbyItems(draggedElement, x, y) {
+            const threshold = 80;
+
+            for (let activeItem of gameState.activeItems) {
+                if (activeItem.element === draggedElement) continue;
+
+                const otherX = parseFloat(activeItem.element.style.left);
+                const otherY = parseFloat(activeItem.element.style.top);
+
+                const distance = Math.sqrt(Math.pow(x - otherX, 2) + Math.pow(y - otherY, 2));
+
+                if (distance < threshold) {
+                    const draggedItemId = draggedElement.dataset.itemId;
+                    const otherItemId = activeItem.element.dataset.itemId;
+
+                    checkCombination(draggedElement, activeItem.element, draggedItemId, otherItemId);
+                    return;
+                }
+            }
+        }
+
+        // ============ COMBINATION LOGIC ============
+
+        function checkCombination(element1, element2, itemId1, itemId2) {
+            const key1 = itemId1 + '-' + itemId2;
+            const key2 = itemId2 + '-' + itemId1;
+
+            let result = RECIPES[key1] || RECIPES[key2];
+
+            if (result) {
+                // Success!
+                successCombination(element1, element2, result);
+            } else {
+                // Failure - shake animation
+                failedCombination(element1, element2);
+            }
+        }
+
+        function successCombination(element1, element2, resultItemId) {
+            // Remove old items
+            const item1 = gameState.activeItems.find(i => i.element === element1);
+            const item2 = gameState.activeItems.find(i => i.element === element2);
+
+            if (item1) gameState.activeItems.splice(gameState.activeItems.indexOf(item1), 1);
+            if (item2) gameState.activeItems.splice(gameState.activeItems.indexOf(item2), 1);
+
+            element1.remove();
+            element2.remove();
+
+            // Calculate position for new item (average of both)
+            const x1 = parseFloat(element1.style.left);
+            const y1 = parseFloat(element1.style.top);
+            const x2 = parseFloat(element2.style.left);
+            const y2 = parseFloat(element2.style.top);
+
+            const newX = (x1 + x2) / 2;
+            const newY = (y1 + y2) / 2;
+
+            // Create new item
+            createSprite(resultItemId, newX, newY);
+            const newElement = gameState.activeItems[gameState.activeItems.length - 1].element;
+            newElement.classList.add('success-flash');
+
+            // Add to discovered items
+            if (!gameState.discoveredItems.has(resultItemId)) {
+                gameState.discoveredItems.add(resultItemId);
+                showFloatingText('+Novo item!', newX + 30, newY);
+                showToast('🎉 ' + ITEMS_DATA[resultItemId].name + ' descoberto!', 'success');
+                updateDiscoveredPanel();
+                updateCounter();
+            }
+        }
+
+        function failedCombination(element1, element2) {
+            element1.classList.add('shake');
+            element2.classList.add('shake');
+
+            setTimeout(() => {
+                element1.classList.remove('shake');
+                element2.classList.remove('shake');
+            }, 300);
+
+            showToast('❌ Essa combinação não existe... ainda!', 'error');
+        }
+
+        // ============ UI UPDATES ============
+
+        function updateDiscoveredPanel() {
+            discoveredItemsContainer.innerHTML = '';
+            gameState.discoveredItems.forEach(itemId => {
+                const itemData = ITEMS_DATA[itemId];
+                if (!itemData) return;
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'discovered-item';
+                itemDiv.title = itemData.name;
+
+                const img = document.createElement('img');
+                img.src = itemData.image;
+                img.alt = itemData.name;
+
+                itemDiv.appendChild(img);
+                discoveredItemsContainer.appendChild(itemDiv);
+
+                // Click to add to canvas
+                itemDiv.addEventListener('click', () => {
+                    const randomX = Math.random() * (gameCanvas.offsetWidth - 60);
+                    const randomY = Math.random() * (gameCanvas.offsetHeight - 60);
+                    createSprite(itemId, randomX, randomY);
+                });
+            });
+        }
+
+        function updateCounter() {
+            const totalItems = Object.keys(ITEMS_DATA).length;
+            const discovered = gameState.discoveredItems.size;
+            counterDisplay.textContent = discovered + '/' + totalItems;
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 2000);
+        }
+
+        function showFloatingText(text, x, y) {
+            const floatingText = document.createElement('div');
+            floatingText.className = 'floating-text';
+            floatingText.textContent = text;
+            floatingText.style.left = x + 'px';
+            floatingText.style.top = y + 'px';
+            document.body.appendChild(floatingText);
+
+            setTimeout(() => {
+                floatingText.remove();
+            }, 2000);
+        }
+
+        // ============ CONTROLS ============
+
+        resetBtn.addEventListener('click', () => {
+            initGame();
+            showToast('🔄 Jogo reiniciado!', 'info');
+        });
+
+        hintBtn.addEventListener('click', () => {
+            const possibleCombinations = [
+                { items: ['papel', 'papel'], result: 'papel-reciclado' },
+                { items: ['metal', 'metal'], result: 'aluminio-fundido' },
+                { items: ['vidro', 'vidro'], result: 'vidro-moido' },
+                { items: ['garrafa-plastico', 'garrafa-plastico'], result: 'plastico-triturado' }
+            ];
+
+            const hint = possibleCombinations[Math.floor(Math.random() * possibleCombinations.length)];
+            const itemNames = hint.items.map(id => ITEMS_DATA[id].name).join(' + ');
+            const resultName = ITEMS_DATA[hint.result].name;
+
+            showToast('💡 Tente: ' + itemNames + ' = ' + resultName, 'info');
+        });
+
+        // ============ START GAME ============
+
+        initGame();
+    </script>
+</body>
+</html>
