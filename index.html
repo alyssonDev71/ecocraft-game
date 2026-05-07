@@ -430,13 +430,14 @@
             'papel-reciclado-plastico-triturado': 'brinquedo-ecologico',
             'plastico-triturado-papel-reciclado': 'brinquedo-ecologico',
             'papel-higienico-papel': 'papel-reciclado',
-            'papel-papel-higienico': 'papel-reciclado'
+            'papel-papel-higienico': 'papel-reciclado',
+            'madeira-madeira': 'carvão-mineral'
         };
 
         const ITEMS_DATA = {
             'papel': { name: 'Papel', image: 'objetos/objetos primarios/papel.png', type: 'primary' },
             'papelao': { name: 'Papelão', image: 'objetos/objetos primarios/papelao.png', type: 'primary' },
-            'plastico-triturado': { name: 'Plástico Triturado', image: 'objetos/objetos primarios/plastico-triturado.png', type: 'primary' },
+            'plastico-triturado': { name: 'Plástico Triturado', image: 'objetos/objetos de combinações/plastico-triturado.png', type: 'primary' },
             'garrafa-plastico': { name: 'Garrafa Plástica', image: 'objetos/objetos primarios/garrafa-plastico.png', type: 'primary' },
             'sacola-plastica': { name: 'Sacola Plástica', image: 'objetos/objetos primarios/sacola-plastica.png', type: 'primary' },
             'vidro': { name: 'Vidro', image: 'objetos/objetos primarios/vidro.png', type: 'primary' },
@@ -447,7 +448,10 @@
             'vidro-moido': { name: 'Vidro Moído', image: 'objetos/objetos de combinações/vidro-moido.png', type: 'intermediate' },
             'vidro-reciclado': { name: 'Vidro Reciclado', image: 'objetos/objetos de combinações/vidro-reciclado.png', type: 'advanced' },
             'cadeira-plastico': { name: 'Cadeira de Plástico', image: 'objetos/objetos de combinações/cadeira-plastico.png', type: 'advanced' },
-            'brinquedo-ecologico': { name: 'Brinquedo Ecológico', image: 'objetos/objetos de combinações/brinquedo-ecologico.png', type: 'advanced' }
+            'brinquedo-ecologico': { name: 'Brinquedo Ecológico', image: 'objetos/objetos de combinações/brinquedo-ecologico.png', type: 'advanced' },
+            'carvão-mineral': { name: 'Carvão Mineral', image: 'objetos/objetos de combinações/carvão-mineral.png', type: 'intermediate'},
+            'madeira': { name: 'Madeira', image: 'objetos/objetos primarios/madeira.png', type: 'primary'}
+            
         };
 
         // ============ GAME STATE ============
@@ -477,7 +481,7 @@
             gameCanvas.innerHTML = '';
 
             // Add initial items
-            const initialItems = ['papel', 'papelao', 'garrafa-plastico', 'metal'];
+            const initialItems = ['papel', 'papelao', 'garrafa-plastico', 'metal', 'madeira'];
             initialItems.forEach((itemId, index) => {
                 createSprite(itemId, 40 + index * 80, 100);
                 gameState.discoveredItems.add(itemId);
@@ -757,7 +761,8 @@
                 { items: ['papel', 'papel'], result: 'papel-reciclado' },
                 { items: ['metal', 'metal'], result: 'aluminio-fundido' },
                 { items: ['vidro', 'vidro'], result: 'vidro-moido' },
-                { items: ['garrafa-plastico', 'garrafa-plastico'], result: 'plastico-triturado' }
+                { items: ['garrafa-plastico', 'garrafa-plastico'], result: 'plastico-triturado' },
+                { items: ['madeira', 'madeira'], result: 'carvão-mineral'}
             ];
 
             const hint = possibleCombinations[Math.floor(Math.random() * possibleCombinations.length)];
