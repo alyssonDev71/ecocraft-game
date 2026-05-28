@@ -12,8 +12,8 @@
         }
 
         :root {
-            --primary-green: #4CAF50;
-            --primary-brown: #8B5E3C;
+            --primary-green: #2ece33;
+            --primary-brown: #a5612a;
             --primary-blue: #2196F3;
             --dark-bg: #0a0a0a;
             --card-bg: rgba(255, 255, 255, 0.05);
@@ -39,39 +39,29 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 16px;
-            background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(139, 94, 60, 0.1));
+            padding: 0 10px;
+            background-color: #1b661d6c;
             border-bottom: 1px solid var(--card-border);
             flex-shrink: 0;
         }
 
-        .header-logo {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
         .header-logo img {
-            height: 32px;
+            height: 79px;
             width: auto;
-        }
 
-        .header-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
         }
 
         .discovery-counter {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 10px;
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            padding: 6px 12px;
+            padding: 10px 15px;
+            margin-right: 15px;
             border-radius: 8px;
-            font-size: 12px;
-            font-weight: 500;
+            font-size: 16px;
+           
         }
 
         .counter-value {
@@ -83,15 +73,14 @@
         .game-canvas {
             flex: 1;
             position: relative;
-            background-color: var(--dark-bg);
+            background: linear-gradient(150deg, rgba(39, 39, 92, 0.507)10%, rgb(21, 73, 107));
             overflow: hidden;
             border-bottom: 1px solid var(--card-border);
+            display: flex;
         }
 
         .item-sprite {
             position: absolute;
-            width: 60px;
-            height: 60px;
             cursor: grab;
             user-select: none;
             display: flex;
@@ -112,7 +101,7 @@
 
         .item-sprite.dragging {
             cursor: grabbing;
-            box-shadow: 0 0 20px rgba(76, 175, 80, 0.6), 0 0 40px rgba(76, 175, 80, 0.3);
+            box-shadow: 0 0 20px rgba(36, 170, 40, 0.6), 0 0 40px rgba(22, 189, 27, 0.938);
             z-index: 1000;
         }
 
@@ -387,8 +376,7 @@
     <!-- Header -->
     <div class="game-header">
         <div class="header-logo">
-            <img src="logo-jogo.png" alt="EcoCraft Logo">
-            <span class="header-title">EcoCraft</span>
+            <img src="assets/logo-horizontal.png" alt="EcoCraft Logo">
         </div>
         <div class="discovery-counter">
             <span>Descobertas:</span>
@@ -425,13 +413,12 @@
             'garrafa-plastico-sacola-plastica': 'plastico-triturado',
             'vidro-vidro': 'vidro-moido',
             'plastico-triturado-plastico-triturado': 'cadeira-plastico',
-            'vidro-moido-aluminio-fundido': 'vidro-reciclado',
-            'aluminio-fundido-vidro-moido': 'vidro-reciclado',
+            'plastico-triturado-vidro-moido': 'vidro-reciclado',
             'papel-reciclado-plastico-triturado': 'brinquedo-ecologico',
             'plastico-triturado-papel-reciclado': 'brinquedo-ecologico',
             'papel-higienico-papel': 'papel-reciclado',
             'papel-papel-higienico': 'papel-reciclado',
-            'madeira-madeira': 'carvão-mineral'
+            'madeira-madeira': 'carvão-vegetal'
         };
 
         const ITEMS_DATA = {
@@ -449,7 +436,7 @@
             'vidro-reciclado': { name: 'Vidro Reciclado', image: 'objetos/objetos de combinações/vidro-reciclado.png', type: 'advanced' },
             'cadeira-plastico': { name: 'Cadeira de Plástico', image: 'objetos/objetos de combinações/cadeira-plastico.png', type: 'advanced' },
             'brinquedo-ecologico': { name: 'Brinquedo Ecológico', image: 'objetos/objetos de combinações/brinquedo-ecologico.png', type: 'advanced' },
-            'carvão-mineral': { name: 'Carvão Mineral', image: 'objetos/objetos de combinações/carvão-mineral.png', type: 'intermediate'},
+            'carvão-vegetal': { name: 'Carvão Vegetal', image: 'objetos/objetos de combinações/carvão-vegetal.png', type: 'intermediate'},
             'madeira': { name: 'Madeira', image: 'objetos/objetos primarios/madeira.png', type: 'primary'}
             
         };
@@ -480,10 +467,16 @@
             discoveredItemsContainer.innerHTML = '';
             gameCanvas.innerHTML = '';
 
-            // Add initial items
-            const initialItems = ['papel', 'papelao', 'garrafa-plastico', 'metal', 'madeira'];
+            const initialItems = ['papel', 'papelao', 'garrafa-plastico', 'metal', 'vidro'];
+
+            // Alinha os itens verticalmente à esquerda, distribuídos pela altura do canvas
+            const startX = 10;
+            const canvasHeight = gameCanvas.offsetHeight;
+            const spacing = Math.floor((canvasHeight - 40) / initialItems.length);
+
             initialItems.forEach((itemId, index) => {
-                createSprite(itemId, 40 + index * 80, 100);
+                const y = 20 + index * spacing;
+                createSprite(itemId, startX, y);
                 gameState.discoveredItems.add(itemId);
             });
 
@@ -762,7 +755,7 @@
                 { items: ['metal', 'metal'], result: 'aluminio-fundido' },
                 { items: ['vidro', 'vidro'], result: 'vidro-moido' },
                 { items: ['garrafa-plastico', 'garrafa-plastico'], result: 'plastico-triturado' },
-                { items: ['madeira', 'madeira'], result: 'carvão-mineral'}
+                { items: ['madeira', 'madeira'], result: 'carvão-vegetal'}
             ];
 
             const hint = possibleCombinations[Math.floor(Math.random() * possibleCombinations.length)];
